@@ -1,0 +1,16 @@
+order_id,customer_id,product_id,order_date,quantity,unit_price,total_amount,status,shipping_address
+1,1,101,2023-11-01,2,29.99,59.98,completed,123 Main St New York NY 10001
+2,2,102,2023-11-02,1,49.99,49.99,completed,456 Oak Ave Los Angeles CA 90210
+3,3,103,2023-11-03,3,19.99,59.97,completed,789 Pine Rd Chicago IL 60601
+4,1,104,2023-11-04,1,79.99,79.99,shipped,123 Main St New York NY 10001
+5,4,105,2023-11-05,2,39.99,79.98,processing,321 Elm St Houston TX 77001
+6,5,101,2023-11-06,1,29.99,29.99,completed,654 Maple Dr Phoenix AZ 85001
+7,6,106,2023-11-07,4,14.99,59.96,completed,987 Cedar Ln Philadelphia PA 19101
+8,7,107,2023-11-08,1,99.99,99.99,shipped,147 Birch St San Antonio TX 78201
+9,8,102,2023-11-09,2,49.99,99.98,processing,258 Spruce Ave San Diego CA 92101
+10,9,108,2023-11-10,1,199.99,199.99,cancelled,369 Willow Way Dallas TX 75201
+11,10,103,2023-11-11,2,19.99,39.98,completed,741 Poplar Pl San Jose CA 95101
+12,2,109,2023-11-12,1,149.99,149.99,shipped,456 Oak Ave Los Angeles CA 90210
+13,3,110,2023-11-13,3,24.99,74.97,processing,789 Pine Rd Chicago IL 60601
+14,1,111,2023-11-14,1,89.99,89.99,completed,123 Main St New York NY 10001
+15,5,112,2023-11-15,2,34.99,69.98,shipped,654 Maple Dr Phoenix AZ 85001
