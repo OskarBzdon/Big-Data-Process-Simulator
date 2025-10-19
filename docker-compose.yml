@@ -128,7 +128,6 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
-    command: python business_process_simulator.py
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.4.0
@@ -149,6 +148,59 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  kafka-topics-init:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: business_kafka_topics_init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - bash
+      - -lc
+      - |
+        printf "1\n" | python manage-kafka-topics.py
+
+  connect-register:
+    image: debezium/connect:2.4
+    container_name: business_connect_register
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-connect:
+        condition: service_healthy
+      business_app:
+        condition: service_completed_successfully
+    volumes:
+      - ./debezium-connectors:/debezium-connectors:ro
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - bash
+      - -lc
+      - |
+        printf "1\n" | register-debezium-connector.sh
+
+  consumer:
+    build: .
+    container_name: business_json_consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      connect-register:
+        condition: service_completed_successfully
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - bash
+      - -lc
+      - |
+        printf "1\n" | python kafka-json-consumer.py
 
 volumes:
   postgres_data:

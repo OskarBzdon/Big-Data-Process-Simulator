@@ -1,11 +1,5 @@
 #!/bin/bash
 
-echo "📋 Managing Kafka Topics for JSON Streaming..."
-
-# Wait for Kafka to be ready
-echo "⏳ Waiting for Kafka to be ready..."
-sleep 30
-
 # Create topics for business events
 echo "📝 Creating Kafka topics..."
 
