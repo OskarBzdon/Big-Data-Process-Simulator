@@ -29,3 +29,6 @@ flake8>=6.0.0
 # Database utilities
 sqlalchemy>=2.0.0
 alembic>=1.11.0
+
+# Kafka integration for Debezium verification
+kafka-python>=2.0.2

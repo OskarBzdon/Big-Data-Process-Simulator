@@ -86,12 +86,12 @@ class BusinessProcessSimulator:
                 logger.error("Failed to fetch Kaggle data")
                 return False
             
-            # Load the saved CSV files
-            kaggle_dir = 'data/kaggle'
-            if os.path.exists(kaggle_dir):
-                for filename in os.listdir(kaggle_dir):
-                    if filename.endswith('.csv'):
-                        filepath = os.path.join(kaggle_dir, filename)
+            # Load the saved CSV files from data directory
+            data_dir = 'data'
+            if os.path.exists(data_dir):
+                for filename in os.listdir(data_dir):
+                    if filename.endswith('.csv') and filename.startswith('ncr_ride_bookings'):
+                        filepath = os.path.join(data_dir, filename)
                         df = pd.read_csv(filepath)
                         dataset_name = filename.replace('.csv', '')
                         self.dataframes[dataset_name] = df
@@ -333,11 +333,9 @@ def main():
         'password': os.getenv('DB_PASSWORD', 'password')
     }
     
-    # Optional local CSV file paths
+    # Local CSV file path - NCR ride bookings data
     local_csv_paths = [
-        'data/customers.csv',
-        'data/orders.csv',
-        'data/products.csv'
+        'data/ncr_ride_bookings.csv'
     ]
     
     # Create simulator instance

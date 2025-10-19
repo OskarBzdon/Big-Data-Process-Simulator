@@ -22,8 +22,8 @@ for record_set in record_sets:
         df = df.fillna('NULL')
         
         # Create output directory
-        os.makedirs('data/kaggle', exist_ok=True)
+        os.makedirs('data', exist_ok=True)
         
         # Save to CSV
-        filename = f"{record_set.name.replace(' ', '_').replace('-', '_').lower()}.csv"
-        df.to_csv(f'data/kaggle/{filename}', index=False)
+        filename = f"{record_set.name.replace(' ', '_').replace('-', '_').lower()}"
+        df.to_csv(f'data/{filename}', index=False)
