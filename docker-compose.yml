@@ -155,14 +155,15 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+    volumes:
+      - ./scripts:/scripts:ro
     networks:
       - business_network
     restart: "no"
     command:
       - bash
       - -lc
-      - |
-        printf "1\n" | python manage-kafka-topics.py
+      - bash /scripts/manage-kafka-topics.sh
 
   connect-register:
     image: debezium/connect:2.4
@@ -176,14 +177,14 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./debezium-connectors:/debezium-connectors:ro
+      - ./scripts:/scripts:ro
     networks:
       - business_network
     restart: "no"
     command:
       - bash
       - -lc
-      - |
-        printf "1\n" | register-debezium-connector.sh
+      - bash /scripts/register-debezium-connector.sh
 
   consumer:
     build: .
@@ -193,6 +194,8 @@ services:
         condition: service_healthy
       connect-register:
         condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     networks:
       - business_network
     restart: "no"
@@ -200,7 +203,55 @@ services:
       - bash
       - -lc
       - |
-        printf "1\n" | python kafka-json-consumer.py
+        python kafka-json-consumer.py --non-interactive --topic business_postgres.public.business_ncr_ride_bookings
+
+  verify-debezium:
+    build: .
+    container_name: business_verify_debezium
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-connect:
+        condition: service_healthy
+      connect-register:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: business_db
+      DB_USER: postgres
+      DB_PASSWORD: password
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - bash
+      - -lc
+      - |
+        python verify-debezium.py
+    profiles: [ verify ]
+
+  verify-kafka-streaming:
+    build: .
+    container_name: business_verify_kafka
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - bash
+      - -lc
+      - |
+        python verify-kafka-streaming.py
+    profiles: [ verify ]
 
 volumes:
   postgres_data:

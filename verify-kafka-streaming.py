@@ -6,6 +6,7 @@ Verifies that Kafka cluster, JSON serialization, Schema Registry, and consumer a
 
 import json
 import time
+import os
 import requests
 import logging
 from kafka import KafkaProducer, KafkaConsumer
@@ -19,7 +20,8 @@ def test_kafka_cluster():
     logger.info("🔍 Testing Kafka cluster...")
     
     try:
-        consumer = KafkaConsumer(bootstrap_servers=['localhost:9092'])
+        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
+        consumer = KafkaConsumer(bootstrap_servers=kafka_bootstrap)
         consumer.close()
         logger.info("✅ Kafka cluster is running")
         return True
@@ -32,7 +34,8 @@ def test_schema_registry():
     logger.info("🔍 Testing Schema Registry...")
     
     try:
-        response = requests.get("http://localhost:8081/subjects", timeout=10)
+        registry_url = os.getenv('SCHEMA_REGISTRY_URL', 'http://localhost:8081')
+        response = requests.get(f"{registry_url}/subjects", timeout=10)
         if response.status_code == 200:
             logger.info("✅ Schema Registry is running")
             return True
@@ -48,9 +51,10 @@ def test_json_serialization():
     logger.info("🔍 Testing JSON serialization...")
     
     try:
+        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
         # Create producer
         producer = KafkaProducer(
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=kafka_bootstrap,
             value_serializer=lambda x: json.dumps(x).encode('utf-8')
         )
         
@@ -71,7 +75,7 @@ def test_json_serialization():
         # Create consumer
         consumer = KafkaConsumer(
             'business-ncr-ride-bookings',
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=kafka_bootstrap,
             auto_offset_reset='latest',
             value_deserializer=lambda x: json.loads(x.decode('utf-8'))
         )
@@ -106,11 +110,8 @@ def test_consumer_validation():
     logger.info("🔍 Testing consumer JSON validation...")
     
     try:
-        consumer = KafkaConsumer(
-            bootstrap_servers=['localhost:9092'],
-            auto_offset_reset='earliest',
-            value_deserializer=lambda x: json.loads(x.decode('utf-8')) if x else None
-        )
+        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
+        consumer = KafkaConsumer(bootstrap_servers=kafka_bootstrap)
         
         # Test with valid JSON
         valid_json = {"test": "message", "timestamp": "2024-01-01T00:00:00"}

@@ -6,6 +6,7 @@ Tests that changes in PostgreSQL are captured by Debezium and sent to Kafka in J
 
 import time
 import json
+import os
 import psycopg2
 from kafka import KafkaConsumer
 import logging
@@ -18,14 +19,22 @@ def test_debezium_capture():
     
     logger.info("🔍 Testing Debezium Change Data Capture...")
     
+    # Resolve configuration from environment
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "business_db")
+    db_user = os.getenv("DB_USER", "postgres")
+    db_password = os.getenv("DB_PASSWORD", "password")
+    kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").split(",")
+
     # Connect to PostgreSQL
     try:
         conn = psycopg2.connect(
-            host="localhost",
-            port="5432",
-            database="business_db",
-            user="postgres",
-            password="password"
+            host=db_host,
+            port=db_port,
+            database=db_name,
+            user=db_user,
+            password=db_password
         )
         conn.autocommit = True
         cursor = conn.cursor()
@@ -38,7 +47,7 @@ def test_debezium_capture():
     try:
         consumer = KafkaConsumer(
             'business_postgres.public.business_ncr_ride_bookings',
-            bootstrap_servers=['localhost:9092'],
+            bootstrap_servers=kafka_bootstrap,
             auto_offset_reset='latest',
             value_deserializer=lambda x: json.loads(x.decode('utf-8'))
         )
@@ -47,13 +56,12 @@ def test_debezium_capture():
         logger.error(f"❌ Failed to connect to Kafka: {e}")
         return False
     
-    # Make a change to PostgreSQL
+    # Make a change to PostgreSQL (use a generic column we know exists)
     try:
         logger.info("📝 Making test change to PostgreSQL...")
-        cursor.execute("""
-            INSERT INTO business_ncr_ride_bookings ("ncr_ride_bookings.csv/date", "ncr_ride_bookings.csv/time", "ncr_ride_bookings.csv/booking+id", "ncr_ride_bookings.csv/booking+status", "ncr_ride_bookings.csv/customer+id", "ncr_ride_bookings.csv/vehicle+type", "ncr_ride_bookings.csv/pickup+location", "ncr_ride_bookings.csv/drop+location")
-            VALUES ('2024-01-01', '2024-01-01 12:00:00', 'TEST999', 'Completed', 'TEST_CUSTOMER', 'Test Vehicle', 'Test Pickup', 'Test Drop')
-        """)
+        cursor.execute(
+            "INSERT INTO business_ncr_ride_bookings (created_at) VALUES (CURRENT_TIMESTAMP)"
+        )
         logger.info("✅ Test record inserted")
     except Exception as e:
         logger.error(f"❌ Failed to insert test record: {e}")

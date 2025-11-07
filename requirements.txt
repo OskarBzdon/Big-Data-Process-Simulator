@@ -32,3 +32,4 @@ alembic>=1.11.0
 
 # Kafka integration for Debezium verification
 kafka-python>=2.0.2
+requests>=2.31.0

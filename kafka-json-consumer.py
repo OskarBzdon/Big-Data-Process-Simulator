@@ -5,8 +5,10 @@ Reads JSON messages from Kafka topics and validates them
 """
 
 import json
+import os
 import time
 import logging
+import argparse
 from kafka import KafkaConsumer
 from datetime import datetime
 
@@ -14,7 +16,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class KafkaJSONConsumer:
-    def __init__(self, bootstrap_servers=['localhost:9092']):
+    def __init__(self, bootstrap_servers=None):
+        # Resolve bootstrap servers from env or default to localhost:9092
+        env_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS')
+        if bootstrap_servers is None:
+            bootstrap_servers = env_bootstrap.split(',') if env_bootstrap else ['localhost:9092']
         self.bootstrap_servers = bootstrap_servers
         self.consumer = None
         
@@ -149,30 +155,47 @@ class KafkaJSONConsumer:
 
 def main():
     """Main function to run the consumer"""
+    parser = argparse.ArgumentParser(description="Kafka JSON Consumer")
+    parser.add_argument("--non-interactive", "-n", action="store_true", help="Run without prompts")
+    parser.add_argument("--topic", "-t", type=str, default=None, help="Topic name to consume (non-interactive)")
+    parser.add_argument("--all-topics", "-a", action="store_true", help="Consume all business topics (non-interactive)")
+    parser.add_argument("--timeout", "-T", type=int, default=30, help="Consume timeout in seconds")
+    args = parser.parse_args()
+
     consumer = KafkaJSONConsumer()
-    
+
     if not consumer.connect():
         return
-    
+
     try:
+        if args.non_interactive:
+            # Parameter-driven mode, no menu printed
+            if args.topic:
+                consumer.consume_topic(args.topic, timeout=args.timeout)
+            else:
+                consumer.consume_all_business_topics(timeout=args.timeout)
+            return
+
+        # Interactive mode
         print("🎯 Kafka JSON Consumer - Task 3 Implementation")
         print("=" * 50)
         print("1. Consume from all business topics (30s timeout)")
         print("2. Consume from specific topic")
         print("3. Exit")
-        
-        choice = input("\nSelect option (1-3): ").strip()
-        
+        print("")
+
+        choice = input("Select option (1-3): ").strip()
+
         if choice == "1":
-            consumer.consume_all_business_topics(timeout=30)
+            consumer.consume_all_business_topics(timeout=args.timeout)
         elif choice == "2":
             topic = input("Enter topic name: ").strip()
-            consumer.consume_topic(topic, timeout=30)
+            consumer.consume_topic(topic, timeout=args.timeout)
         elif choice == "3":
             print("👋 Goodbye!")
         else:
             print("❌ Invalid option")
-            
+
     finally:
         consumer.close()
 

@@ -371,6 +371,8 @@ def main():
             print(f"  Memory: {info['memory_usage']} bytes")
         
         print("="*60)
+
+        sys.exit(0)
     else:
         logger.error("Business process simulation failed!")
         sys.exit(1)
