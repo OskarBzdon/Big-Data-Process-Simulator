@@ -11,6 +11,8 @@
     "topic.prefix": "business_postgres",
     "plugin.name": "pgoutput",
     "table.include.list": "public.business_.*",
+    "publication.autocreate.mode": "all_tables",
+    "snapshot.mode": "never",
     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "key.converter.schemas.enable": "false",

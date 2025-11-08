@@ -1,4 +1,61 @@
 services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: business_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - business_network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: business_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - business_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.4.0
+    container_name: business_schema_registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    networks:
+      - business_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   postgres:
     image: postgres:15-alpine
     container_name: business_postgres
@@ -45,42 +102,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: business_zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - business_network
-    restart: unless-stopped
-
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: business_kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
-    networks:
-      - business_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   kafka-connect:
     image: debezium/connect:2.4
     container_name: business_kafka_connect
@@ -110,45 +131,6 @@ services:
       timeout: 10s
       retries: 3
 
-  business_app:
-    build: .
-    container_name: business_simulator
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: business_db
-      DB_USER: postgres
-      DB_PASSWORD: password
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    networks:
-      - business_network
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
-  schema-registry:
-    image: confluentinc/cp-schema-registry:7.4.0
-    container_name: business_schema_registry
-    depends_on:
-      - kafka
-    ports:
-      - "8081:8081"
-    environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-    networks:
-      - business_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   kafka-topics-init:
     image: confluentinc/cp-kafka:7.4.0
     container_name: business_kafka_topics_init
@@ -165,6 +147,29 @@ services:
       - -lc
       - bash /scripts/manage-kafka-topics.sh
 
+  debezium-cleanup:
+    image: postgres:15-alpine
+    container_name: business_debezium_cleanup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: business_db
+      PGUSER: postgres
+      PGPASSWORD: password
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - |
+        echo "🧹 Cleaning up Debezium publication..."
+        psql -c "DROP PUBLICATION IF EXISTS dbz_publication;" || true
+        echo "✅ Publication cleanup completed"
+
   connect-register:
     image: debezium/connect:2.4
     container_name: business_connect_register
@@ -173,7 +178,7 @@ services:
         condition: service_healthy
       kafka-connect:
         condition: service_healthy
-      business_app:
+      debezium-cleanup:
         condition: service_completed_successfully
     volumes:
       - ./debezium-connectors:/debezium-connectors:ro
@@ -185,6 +190,29 @@ services:
       - bash
       - -lc
       - bash /scripts/register-debezium-connector.sh
+
+  spark:
+    image: apache/spark:3.5.1
+    container_name: business_spark
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: business_postgres.public.business_ncr_ride_bookings
+      IVY_HOME: /tmp/.ivy2
+    volumes:
+      - ./spark:/opt/spark-apps:ro
+    command:
+      - bash
+      - -lc
+      - |
+        export IVY_HOME=/tmp/.ivy2
+        mkdir -p /tmp/.ivy2/cache /tmp/.ivy2/jars
+        /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 --conf spark.sql.streaming.checkpointLocation=/tmp/spark-checkpoints --conf spark.jars.ivy=/tmp/.ivy2 /opt/spark-apps/stream_kafka.py
+    networks:
+      - business_network
+    restart: unless-stopped
 
   consumer:
     build: .
@@ -199,11 +227,40 @@ services:
     networks:
       - business_network
     restart: "no"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from kafka import KafkaConsumer; KafkaConsumer(bootstrap_servers=['kafka:29092']); print('ok')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
     command:
       - bash
       - -lc
       - |
-        python kafka-json-consumer.py --non-interactive --topic business_postgres.public.business_ncr_ride_bookings
+        python kafka-json-consumer.py --non-interactive --topic business_postgres.public.business_ncr_ride_bookings --timeout 300
+
+  business_app:
+    build: .
+    container_name: business_simulator
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: business_db
+      DB_USER: postgres
+      DB_PASSWORD: password
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - business_network
+    depends_on:
+      connect-register:
+        condition: service_completed_successfully
+      consumer:
+        condition: service_healthy
+      spark:
+        condition: service_started
+    restart: "no"
 
   verify-debezium:
     build: .
@@ -251,6 +308,27 @@ services:
       - -lc
       - |
         python verify-kafka-streaming.py
+    profiles: [ verify ]
+
+  verify-spark-consumption:
+    build: .
+    container_name: business_verify_spark
+    depends_on:
+      kafka:
+        condition: service_healthy
+      spark:
+        condition: service_started
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: business_postgres.public.business_ncr_ride_bookings
+    networks:
+      - business_network
+    restart: "no"
+    command:
+      - bash
+      - -lc
+      - |
+        python verify-spark-consumption.py
     profiles: [ verify ]
 
 volumes:
