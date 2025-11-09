@@ -9,9 +9,9 @@ For a deeper overview and setup steps, see `DOCUMENTATION.md`.
 
 ### Quick start
 - Build and run the stack: `docker compose up --build`
-- Optional: manage topics: `./manage-kafka-topics.sh`
-- Verify Kafka streaming: `python verify-kafka-streaming.py`
-- Verify Debezium CDC: `python verify-debezium.py`
+- Optional: manage topics: `./scripts/kafka/manage-kafka-topics.sh`
+- Verify Kafka streaming: `python scripts/verification/verify-kafka-streaming.py`
+- Verify Debezium CDC: `python scripts/verification/verify-debezium.py`
 
 ### File responsibilities
 
@@ -27,14 +27,15 @@ For a deeper overview and setup steps, see `DOCUMENTATION.md`.
 
 - `init-scripts/setup-replication.sql`: Postgres init script enabling logical replication and creating the `debezium_user` role with grants. Executes only on first DB initialization of the volume.
 
-- `debezium-connectors/postgres-connector.json`: Debezium PostgreSQL connector config. Captures `public.business_*` tables, emits JSON (schemas disabled), unwraps the envelope, and adds `op` and `ts_ms` fields.
+- `scripts/debezium/postgres-connector.json`: Debezium PostgreSQL connector config. Captures `public.business_*` tables, emits JSON (schemas disabled), unwraps the envelope, and adds `op` and `ts_ms` fields.
 
-- `register-debezium-connector.sh`: Registers the Debezium connector with Kafka Connect via REST using the JSON in `debezium-connectors/`.
+- `scripts/debezium/register-debezium-connector.sh`: Registers the Debezium connector with Kafka Connect via REST using the JSON config in the same folder.
 
-- `manage-kafka-topics.sh`: Creates and lists Kafka topics used by the examples (e.g., `business-ncr-ride-bookings`).
-- `kafka-json-consumer.py`: Simple JSON consumer that connects to Kafka, subscribes to business topics, validates/prints JSON payloads.
-- `verify-kafka-streaming.py`: Verifies Kafka cluster availability, Schema Registry, JSON producer/consumer path, and basic consumer validation.
-- `verify-debezium.py`: Inserts a test row into `business_ncr_ride_bookings` and confirms a JSON CDC event arrives on the Debezium topic.
+- `scripts/kafka/manage-kafka-topics.sh`: Creates and lists Kafka topics used by the examples (e.g., `business-ncr-ride-bookings`).
+- `scripts/kafka/kafka-json-consumer.py`: Simple JSON consumer that connects to Kafka, subscribes to business topics, validates/prints JSON payloads.
+- `scripts/verification/verify-kafka-streaming.py`: Verifies Kafka cluster availability, Schema Registry, JSON producer/consumer path, and basic consumer validation.
+- `scripts/verification/verify-debezium.py`: Inserts a test row into `business_ncr_ride_bookings` and confirms a JSON CDC event arrives on the Debezium topic.
+- `scripts/verification/verify-spark-consumption.py`: Verifies Spark's consumption of Kafka messages and Delta Lake writes.
 
 ### Service endpoints
 - PostgreSQL: `localhost:5432` (DB `business_db`, user `postgres`/`password`)

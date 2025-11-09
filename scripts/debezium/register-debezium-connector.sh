@@ -13,7 +13,7 @@ sleep 2
 echo "📝 Registering Debezium connector..."
 curl -sS -X POST http://kafka-connect:8083/connectors \
   -H "Content-Type: application/json" \
-  -d @/debezium-connectors/postgres-connector.json || true
+  -d @/scripts/debezium/postgres-connector.json || true
 
 echo ""
 echo "✅ Debezium connector registration attempted. Current connectors:"

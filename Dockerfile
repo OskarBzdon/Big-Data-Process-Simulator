@@ -23,7 +23,7 @@ RUN mkdir -p data logs
 
 # Copy helper scripts directory and make all scripts executable
 COPY scripts/ /app/scripts/
-RUN chmod +x /app/scripts/*.sh
+RUN find /app/scripts -type f -name "*.sh" -exec chmod +x {} \;
 
 # Set environment variables
 ENV PYTHONPATH=/app

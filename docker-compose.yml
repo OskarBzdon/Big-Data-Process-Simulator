@@ -145,7 +145,7 @@ services:
     command:
       - bash
       - -lc
-      - bash /scripts/manage-kafka-topics.sh
+      - bash /scripts/kafka/manage-kafka-topics.sh
 
   debezium-cleanup:
     image: postgres:15-alpine
@@ -181,7 +181,6 @@ services:
       debezium-cleanup:
         condition: service_completed_successfully
     volumes:
-      - ./debezium-connectors:/debezium-connectors:ro
       - ./scripts:/scripts:ro
     networks:
       - business_network
@@ -189,7 +188,7 @@ services:
     command:
       - bash
       - -lc
-      - bash /scripts/register-debezium-connector.sh
+      - bash /scripts/debezium/register-debezium-connector.sh
 
   minio:
     image: minio/minio:latest
@@ -298,7 +297,7 @@ services:
       - bash
       - -lc
       - |
-        python kafka-json-consumer.py --non-interactive --topic business_postgres.public.business_ncr_ride_bookings --timeout 300
+        python scripts/kafka/kafka-json-consumer.py --non-interactive --topic business_postgres.public.business_ncr_ride_bookings --timeout 300
 
   business_app:
     build: .
@@ -347,7 +346,7 @@ services:
       - bash
       - -lc
       - |
-        python verify-debezium.py
+        python scripts/verification/verify-debezium.py
     profiles: [ verify ]
 
   verify-kafka-streaming:
@@ -368,7 +367,7 @@ services:
       - bash
       - -lc
       - |
-        python verify-kafka-streaming.py
+        python scripts/verification/verify-kafka-streaming.py
     profiles: [ verify ]
 
   verify-spark-consumption:
@@ -389,7 +388,7 @@ services:
       - bash
       - -lc
       - |
-        python verify-spark-consumption.py
+        python scripts/verification/verify-spark-consumption.py
     profiles: [ verify ]
 
 volumes:
