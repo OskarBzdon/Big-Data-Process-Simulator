@@ -8,10 +8,13 @@ This repository demonstrates an end-to-end data workflow:
 For a deeper overview and setup steps, see `DOCUMENTATION.md`.
 
 ### Quick start
-- Build and run the stack: `docker compose up --build`
-- Optional: manage topics: `./scripts/kafka/manage-kafka-topics.sh`
-- Verify Kafka streaming: `python scripts/verification/verify-kafka-streaming.py`
-- Verify Debezium CDC: `python scripts/verification/verify-debezium.py`
+1. **Copy environment file**: `cp .env.example .env` (or create `.env` with your credentials)
+2. **Build and run the stack**: `docker compose up --build`
+3. **Optional**: manage topics: `./scripts/kafka/manage-kafka-topics.sh`
+4. **Verify Kafka streaming**: `python scripts/verification/verify-kafka-streaming.py`
+5. **Verify Debezium CDC**: `python scripts/verification/verify-debezium.py`
+
+**Note**: All passwords and credentials are configured via environment variables. See `.env.example` for required variables.
 
 ### File responsibilities
 
@@ -38,11 +41,16 @@ For a deeper overview and setup steps, see `DOCUMENTATION.md`.
 - `scripts/verification/verify-spark-consumption.py`: Verifies Spark's consumption of Kafka messages and Delta Lake writes.
 
 ### Service endpoints
-- PostgreSQL: `localhost:5432` (DB `business_db`, user `postgres`/`password`)
-- pgAdmin: `http://localhost:8080` (admin@business.com / admin123)
+- PostgreSQL: `localhost:5432` (credentials in `.env`)
+- pgAdmin: `http://localhost:8080` (credentials in `.env`)
 - Kafka: `localhost:9092`
 - Kafka Connect (Debezium): `http://localhost:8083`
 - Schema Registry: `http://localhost:8081`
+- MinIO Console: `http://localhost:9001` (credentials in `.env`)
+
+### Configuration
+- **Environment Variables**: Copy `.env.example` to `.env` and configure all credentials
+- **Required Variables**: See `.env.example` for all required environment variables
 
 ### Notes
 - Compose mounts `./init-scripts` into Postgres; the SQL init runs only when the data volume is created fresh.

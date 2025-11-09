@@ -20,12 +20,12 @@ def test_debezium_capture():
     logger.info("🔍 Testing Debezium Change Data Capture...")
     
     # Resolve configuration from environment
-    db_host = os.getenv("DB_HOST", "localhost")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "business_db")
-    db_user = os.getenv("DB_USER", "postgres")
-    db_password = os.getenv("DB_PASSWORD", "password")
-    kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092").split(",")
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT")
+    db_name = os.getenv("DB_NAME")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS").split(",")
 
     # Connect to PostgreSQL
     try:

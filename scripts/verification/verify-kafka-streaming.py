@@ -20,7 +20,7 @@ def test_kafka_cluster():
     logger.info("🔍 Testing Kafka cluster...")
     
     try:
-        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
+        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS').split(',')
         consumer = KafkaConsumer(bootstrap_servers=kafka_bootstrap)
         consumer.close()
         logger.info("✅ Kafka cluster is running")
@@ -34,7 +34,7 @@ def test_schema_registry():
     logger.info("🔍 Testing Schema Registry...")
     
     try:
-        registry_url = os.getenv('SCHEMA_REGISTRY_URL', 'http://localhost:8081')
+        registry_url = os.getenv('SCHEMA_REGISTRY_URL')
         response = requests.get(f"{registry_url}/subjects", timeout=10)
         if response.status_code == 200:
             logger.info("✅ Schema Registry is running")
@@ -51,7 +51,7 @@ def test_json_serialization():
     logger.info("🔍 Testing JSON serialization...")
     
     try:
-        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
+        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS').split(',')
         # Create producer
         producer = KafkaProducer(
             bootstrap_servers=kafka_bootstrap,
@@ -110,7 +110,7 @@ def test_consumer_validation():
     logger.info("🔍 Testing consumer JSON validation...")
     
     try:
-        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',')
+        kafka_bootstrap = os.getenv('KAFKA_BOOTSTRAP_SERVERS').split(',')
         consumer = KafkaConsumer(bootstrap_servers=kafka_bootstrap)
         
         # Test with valid JSON

@@ -60,9 +60,9 @@ services:
     image: postgres:15-alpine
     container_name: business_postgres
     environment:
-      POSTGRES_DB: business_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
@@ -88,8 +88,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: business_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@business.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "8080:80"
@@ -156,9 +156,9 @@ services:
     environment:
       PGHOST: postgres
       PGPORT: 5432
-      PGDATABASE: business_db
-      PGUSER: postgres
-      PGPASSWORD: password
+      PGDATABASE: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
     networks:
       - business_network
     restart: "no"
@@ -180,6 +180,13 @@ services:
         condition: service_healthy
       debezium-cleanup:
         condition: service_completed_successfully
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./scripts:/scripts:ro
     networks:
@@ -197,8 +204,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
       - ./scripts/init-minio-bucket.sh:/docker-entrypoint-init.d/init-bucket.sh:ro
@@ -218,7 +225,7 @@ services:
         done
         
         # Configure and create bucket
-        mc alias set local http://localhost:9000 minioadmin minioadmin
+        mc alias set local http://localhost:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}
         mc mb local/business-data 2>/dev/null || echo "Bucket already exists"
         
         # Keep MinIO running
@@ -243,11 +250,11 @@ services:
       KAFKA_TOPIC: business_postgres.public.business_ncr_ride_bookings
       IVY_HOME: /tmp/.ivy2
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      S3_ENDPOINT: http://minio:9000
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      S3_ENDPOINT: ${MINIO_ENDPOINT}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       DELTA_TABLE_PATH: s3a://business-data/delta/ride-bookings
     volumes:
       - ./spark:/opt/spark-apps:ro
@@ -261,9 +268,9 @@ services:
           --packages io.delta:delta-spark_2.12:3.2.0,org.apache.hadoop:hadoop-aws:3.3.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
           --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
           --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
-          --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000 \
-          --conf spark.hadoop.fs.s3a.access.key=minioadmin \
-          --conf spark.hadoop.fs.s3a.secret.key=minioadmin \
+          --conf spark.hadoop.fs.s3a.endpoint=$${MINIO_ENDPOINT} \
+          --conf spark.hadoop.fs.s3a.access.key=$${MINIO_ROOT_USER} \
+          --conf spark.hadoop.fs.s3a.secret.key=$${MINIO_ROOT_PASSWORD} \
           --conf spark.hadoop.fs.s3a.path.style.access=true \
           --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
           --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
@@ -305,9 +312,9 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: business_db
-      DB_USER: postgres
-      DB_PASSWORD: password
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -338,7 +345,7 @@ services:
       DB_PORT: 5432
       DB_NAME: business_db
       DB_USER: postgres
-      DB_PASSWORD: password
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - business_network
     restart: "no"

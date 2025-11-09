@@ -326,11 +326,11 @@ def main():
     
     # Database configuration
     db_config = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': os.getenv('DB_PORT', '5432'),
-        'database': os.getenv('DB_NAME', 'business_db'),
-        'user': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD', 'password')
+        'host': os.getenv('DB_HOST'),
+        'port': os.getenv('DB_PORT'),
+        'database': os.getenv('DB_NAME'),
+        'user': os.getenv('DB_USER'),
+        'password': os.getenv('DB_PASSWORD')
     }
     
     # Local CSV file path - NCR ride bookings data

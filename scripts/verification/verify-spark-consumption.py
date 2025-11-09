@@ -44,7 +44,7 @@ def check_kafka_consumer_groups():
     logger.info("🔍 Checking Kafka consumer groups...")
     
     try:
-        kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
+        kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
         
         admin_client = KafkaAdminClient(
             bootstrap_servers=kafka_bootstrap.split(","),
@@ -81,7 +81,7 @@ def check_topic_offsets():
     logger.info("🔍 Checking Kafka topic offsets...")
     
     try:
-        kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
+        kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
         topic = os.getenv(
             "KAFKA_TOPIC", "business_postgres.public.business_ncr_ride_bookings"
         )
@@ -126,7 +126,7 @@ def check_spark_consumer_lag():
     logger.info("🔍 Checking Spark consumer lag...")
     
     try:
-        kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
+        kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
         topic = os.getenv(
             "KAFKA_TOPIC", "business_postgres.public.business_ncr_ride_bookings"
         )
