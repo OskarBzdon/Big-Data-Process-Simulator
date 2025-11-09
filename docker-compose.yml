@@ -191,16 +191,65 @@ services:
       - -lc
       - bash /scripts/register-debezium-connector.sh
 
+  minio:
+    image: minio/minio:latest
+    container_name: business_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+      - ./scripts/init-minio-bucket.sh:/docker-entrypoint-init.d/init-bucket.sh:ro
+    networks:
+      - business_network
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        # Start MinIO server in background
+        minio server /data --console-address ":9001" &
+        MINIO_PID=$$!
+        
+        # Wait for MinIO to be ready
+        until curl -sf http://localhost:9000/minio/health/live > /dev/null 2>&1; do
+          sleep 1
+        done
+        
+        # Configure and create bucket
+        mc alias set local http://localhost:9000 minioadmin minioadmin
+        mc mb local/business-data 2>/dev/null || echo "Bucket already exists"
+        
+        # Keep MinIO running
+        wait $$MINIO_PID
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   spark:
     image: apache/spark:3.5.1
     container_name: business_spark
     depends_on:
       kafka:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC: business_postgres.public.business_ncr_ride_bookings
       IVY_HOME: /tmp/.ivy2
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      S3_ENDPOINT: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      DELTA_TABLE_PATH: s3a://business-data/delta/ride-bookings
     volumes:
       - ./spark:/opt/spark-apps:ro
     command:
@@ -209,7 +258,19 @@ services:
       - |
         export IVY_HOME=/tmp/.ivy2
         mkdir -p /tmp/.ivy2/cache /tmp/.ivy2/jars
-        /opt/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 --conf spark.sql.streaming.checkpointLocation=/tmp/spark-checkpoints --conf spark.jars.ivy=/tmp/.ivy2 /opt/spark-apps/stream_kafka.py
+        /opt/spark/bin/spark-submit \
+          --packages io.delta:delta-spark_2.12:3.2.0,org.apache.hadoop:hadoop-aws:3.3.4,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
+          --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+          --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+          --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000 \
+          --conf spark.hadoop.fs.s3a.access.key=minioadmin \
+          --conf spark.hadoop.fs.s3a.secret.key=minioadmin \
+          --conf spark.hadoop.fs.s3a.path.style.access=true \
+          --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem \
+          --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
+          --conf spark.sql.streaming.checkpointLocation=/tmp/spark-checkpoints \
+          --conf spark.jars.ivy=/tmp/.ivy2 \
+          /opt/spark-apps/stream_kafka.py
     networks:
       - business_network
     restart: unless-stopped
@@ -335,6 +396,8 @@ volumes:
   postgres_data:
     driver: local
   pgadmin_data:
+    driver: local
+  minio_data:
     driver: local
 
 networks:

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-Spark Structured Streaming job reading JSON from Kafka and doing basic transforms.
+Simple Spark Streaming job: Kafka → Delta Lake in MinIO
 
+This is a simplified implementation for easy verification.
 Environment variables:
 - KAFKA_BOOTSTRAP_SERVERS (default: kafka:29092)
 - KAFKA_TOPIC (default: business_postgres.public.business_ncr_ride_bookings)
+- DELTA_TABLE_PATH (default: s3a://business-data/delta/ride-bookings)
 """
 
 import os
@@ -15,6 +17,7 @@ from pyspark.sql.functions import (
     regexp_replace,
     from_unixtime,
     when,
+    current_timestamp,
 )
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DoubleType
 
@@ -24,6 +27,9 @@ def main():
     topic = os.getenv(
         "KAFKA_TOPIC", "business_postgres.public.business_ncr_ride_bookings"
     )
+    delta_table_path = os.getenv(
+        "DELTA_TABLE_PATH", "s3a://business-data/delta/ride-bookings"
+    )
 
     spark = (
         SparkSession.builder.appName("KafkaJSONStreamingJob")
@@ -31,6 +37,8 @@ def main():
         .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
+    
+    print(f"📊 Writing Delta Lake tables to: {delta_table_path}")
 
     # Read Kafka stream
     df_kafka = (
@@ -38,6 +46,7 @@ def main():
         .option("kafka.bootstrap.servers", kafka_bootstrap)
         .option("subscribe", topic)
         .option("startingOffsets", "latest")
+        .option("failOnDataLoss", "false")  # Don't fail if offsets change (topic recreated, data aged out)
         .load()
     )
 
@@ -90,15 +99,22 @@ def main():
             updated_at_ts.alias("updated_at_ts"),
             booking_value_clean.alias("booking_value"),
             ride_distance_clean.alias("ride_distance"),
+            current_timestamp().alias("processed_at"),
         )
     )
 
+    # Write to Delta Lake format in MinIO
     query = (
-        result.writeStream.format("console")
+        result.writeStream.format("delta")
         .outputMode("append")
-        .option("truncate", "false")
+        .option("checkpointLocation", f"{delta_table_path}/_checkpoints")
+        .option("path", delta_table_path)
+        .trigger(processingTime="10 seconds")
         .start()
     )
+    
+    print(f"✅ Started streaming query. Writing to Delta Lake: {delta_table_path}")
+    print("📝 Query status updates will appear in logs...")
 
     query.awaitTermination()
 
