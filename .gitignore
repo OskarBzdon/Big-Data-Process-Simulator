@@ -1,14 +1,164 @@
+# Environment variables
 .env
-.DS_Store
-__pycache__/
-.pytest_cache/
-.vscode/
-.idea/
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 .env.development
 .env.test
 .env.production
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.pytype/
+cython_debug/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+virtualenv/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs
 logs/
+*.log
+*.log.*
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+*.dockerignore
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+pgdata/
+
+# Kafka
+kafka-data/
+zookeeper-data/
+connect-data/
+
+# Spark
+spark-logs/
+spark-work/
+*.parquet
+*.delta/
+
+# MinIO
+minio-data/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+.cache/
+
+# Data files (generated/downloaded)
+data/*.csv
+data/*.json
+data/*.parquet
+!data/.gitkeep
+
+# Secrets and credentials
+*.pem
+*.key
+*.crt
+*.cert
+secrets/
+credentials/
+
+# Build artifacts
+target/
+out/
+bin/
+obj/
+
+# Coverage reports
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Spark checkpoint directories
+checkpoint/
+checkpoints/
+spark-checkpoint/
+
+# Kafka consumer offsets (if stored locally)
+consumer-offsets/
+
+# Temporary scripts
+*.sh.bak
+*.py.bak
