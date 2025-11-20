@@ -1,0 +1,14 @@
+.env
+.DS_Store
+__pycache__/
+.pytest_cache/
+.vscode/
+.idea/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
+logs/
