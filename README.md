@@ -1,9 +1,11 @@
-## Big Data Process Simulator: Business Process Simulator, Debezium CDC, and Kafka JSON Streaming
+## Big Data Business Process Simulator: PostgreSQL, Debezium CDC, Kafka JSON Streaming, Spark & MinIO
 
-This repository demonstrates an end-to-end data workflow:
-- Simulate a business process that reads CSVs, dynamically creates PostgreSQL tables, and inserts data (Task 1)
-- Capture database changes with Debezium and stream JSON events to Kafka (Task 2)
-- Run a Kafka cluster with JSON serialization and validate events with a consumer (Task 3)
+This repository demonstrates a complete **real-time data pipeline** that simulates business processes and processes streaming data:
+
+1. **Data Ingestion**: Business process simulator reads CSV files, dynamically creates PostgreSQL tables with inferred schemas, and inserts transactional data
+2. **Change Data Capture**: Debezium monitors PostgreSQL changes and streams database events as JSON messages to Kafka in real-time
+3. **Stream Processing**: Apache Spark Structured Streaming consumes Kafka messages, performs transformations, and writes processed data to MinIO object storage in Delta Lake format
+4. **Data Storage**: Processed data is stored in MinIO (S3-compatible) using Delta Lake for ACID transactions and time travel capabilities
 
 For a deeper overview and setup steps, see `DOCUMENTATION.md`.
 
