@@ -1,4 +1,4 @@
-## WPBD: Business Process Simulator, Debezium CDC, and Kafka JSON Streaming
+## Big Data Process Simulator: Business Process Simulator, Debezium CDC, and Kafka JSON Streaming
 
 This repository demonstrates an end-to-end data workflow:
 - Simulate a business process that reads CSVs, dynamically creates PostgreSQL tables, and inserts data (Task 1)
